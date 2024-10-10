@@ -1,0 +1,52 @@
+pipeline {
+    agent none
+
+    stages {
+        stage ('Git and Build') {
+            agent { label 'M1' }  // Using agent 'M1' for this stage
+            steps {
+                // Cloning the Git repository
+                git 'https://github.com/ELMERIKH/GOD-Stream.git'
+
+                // Running the build and configuration steps
+                sh '''
+                   sudo yum install nodejs -y
+                   sudo npm install
+                   sudo npm run build
+                   sudo yum install nginx -y
+                   sudo systemctl start nginx
+                   sudo cp -rf /var/lib/jenkins/workspace/jenkins/build/* /usr/share/nginx/html/
+                   sudo systemctl restart nginx
+                '''
+            }
+        }
+        stage ('deploying to apcahe in s1'){
+            agent{label 's1'}
+            steps{
+                git 'https://github.com/jagadamma/Bitonbuy.git'
+                sh '''
+                   sudo yum install httpd -y
+                   sudo service httpd start
+                   sudo cp -rf /root/workspace/jenkins/* /var/www/html/
+                   sudo service httpd restart
+                   
+                   '''
+            }
+        }
+        stage ('deploying python in s2'){
+            agent{label 's2'}
+            steps{
+                git branch: 'main', url: 'https://github.com/jagadamma/python.git'
+                sh '''
+                   sudo yum install python -y
+                   sudo yum install pip -y
+                   sudo pip install flask
+                   nohup sudo python a.py > output.log 2>&1 &
+                   
+                   
+                   '''
+            }
+        }
+    }
+}
+
